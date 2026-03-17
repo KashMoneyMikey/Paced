@@ -85,7 +85,8 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
 
 /* Elevated card look with depth */
 .screen{display:none;height:100dvh;flex-direction:column;overflow:hidden;position:relative;z-index:1;}
-#screen-login.active,#screen-onboard.active{overflow-y:auto;overflow-x:hidden;height:auto;min-height:100dvh;display:block;}
+#screen-login.active{overflow-y:auto;overflow-x:hidden;height:auto;min-height:100dvh;display:block;}
+#screen-onboard.active{overflow-y:auto;overflow-x:hidden;height:auto;min-height:100dvh;display:flex;flex-direction:column;}
 .screen.active{display:flex;}
 
 /* ── AUTH ── */
@@ -118,15 +119,15 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
 
 /* ── ONBOARDING ── */
 #screen-onboard{overflow-y:auto;background:var(--bg);}
-.ob-wrap{padding:calc(var(--safe-top)+36px) 32px calc(var(--safe-bottom)+36px);min-height:100dvh;display:flex;flex-direction:column;gap:20px;box-sizing:border-box;width:100%;}
-.step{display:none;flex-direction:column;gap:18px;animation:fadeUp .3s ease;}
+.ob-wrap{padding:calc(var(--safe-top)+40px) 28px calc(var(--safe-bottom)+40px);min-height:100dvh;display:flex;flex-direction:column;gap:22px;box-sizing:border-box;width:100%;flex:1;}
+.step{display:none;flex-direction:column;gap:20px;animation:fadeUp .3s ease;width:100%;}
 .step.active{display:flex;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .step-badge{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);}
-.step-h{font-size:28px;font-weight:700;letter-spacing:-.4px;line-height:1.15;}
+.step-h{font-size:30px;font-weight:700;letter-spacing:-.5px;line-height:1.15;}
 .step-p{font-size:14px;color:var(--text3);line-height:1.65;font-weight:400;}
-.opt-grid{display:flex;flex-direction:column;gap:8px;}
-.opt-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:14px;}
+.opt-grid{display:flex;flex-direction:column;gap:10px;}
+.opt-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:16px 18px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:14px;}
 .opt-card:active{transform:scale(.98);}
 .opt-card.sel{border-color:var(--text);background:var(--surface2);}
 .opt-icon{font-size:20px;flex-shrink:0;}
@@ -137,7 +138,7 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
 .dot.a{background:var(--text);width:16px;border-radius:3px;}
 .theme-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
 .theme-card{border-radius:14px;padding:20px;cursor:pointer;border:2px solid var(--border);text-align:center;transition:all .2s;}
-.theme-card.sel{border-color:var(--text);}
+.theme-card.sel{border-color:var(--text);outline:3px solid rgba(255,255,255,.7);outline-offset:-3px;}
 .tc-light{background:#f8f8f6;color:#111110;}
 .tc-dark{background:#111110;color:#f8f8f6;}
 .av-up{display:flex;flex-direction:column;align-items:center;gap:10px;}
@@ -393,6 +394,9 @@ select.set-inp{appearance:none;}
     <button type="submit" class="btn-dark">Sign In</button>
     <div class="auth-switch">No account? <span onclick="showReg()">Create one</span></div>
   </form>
+  <div style="position:fixed;bottom:calc(env(safe-area-inset-bottom,0px)+80px);left:50%;transform:translateX(-50%);z-index:999;">
+    <button id="test-mode-btn" onclick="toggleTestMode()" style="background:rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.1);border-radius:20px;padding:7px 16px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;letter-spacing:.5px;">TEST MODE: OFF</button>
+  </div>
 
   <form class="auth-form hidden" id="reg-form" action="javascript:void(0)" onsubmit="doReg()">
     <div class="auth-title">Create account</div>
@@ -499,8 +503,10 @@ select.set-inp{appearance:none;}
     <div><div class="step-badge">Step 5 of 6</div><div class="step-h">Build your week</div></div>
     <div class="step-p">Assign workouts to days and set your equipment type.</div>
     <div id="day-assign-wrap"></div>
-    <button class="btn-dark" onclick="goStep(6)">Continue</button>
-    <button class="btn-outline" onclick="goStep(4)">Back</button>
+    <div style="position:sticky;bottom:calc(env(safe-area-inset-bottom,0px)+16px);z-index:10;padding-top:12px;background:linear-gradient(to bottom,transparent,var(--bg) 40%);">
+      <button class="btn-dark" onclick="goStep(6)">Continue</button>
+      <button class="btn-outline" onclick="goStep(4)" style="margin-top:8px;">Back</button>
+    </div>
     <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot a"></div><div class="dot"></div></div>
   </div>
 
@@ -1077,6 +1083,32 @@ const THEMES={
 
 let currentTheme='light';
 const THEME_NAMES={light:'Sand',dark:'Espresso',slate:'Iron',forest:'Emerald',midnight:'Obsidian'};
+
+// ── THEME ENGINE ──
+const _lightDefaults={};
+function applyTheme(t){
+  currentTheme=t;
+  const vars=THEMES[t]||{};
+  // Store light defaults on first call
+  Object.keys(THEMES.dark).forEach(k=>{
+    if(!_lightDefaults[k])_lightDefaults[k]=getComputedStyle(document.documentElement).getPropertyValue(k).trim()||'';
+  });
+  // Reset to light first
+  Object.entries(_lightDefaults).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
+  // Apply theme overrides
+  Object.entries(vars).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
+  // Tab bar and surfaces
+  const tb=document.querySelector('.tab-bar');
+  if(tb)tb.style.background=(t==='dark'||t==='midnight')?'var(--surface)':'var(--surface)';
+}
+function toggleTheme(){
+  const order=['light','dark','slate','forest','midnight'];
+  const next=order[(order.indexOf(currentTheme)+1)%order.length];
+  applyTheme(next);
+  if(D.user){D.user.theme=next;saveData();}
+  renderProfile();
+}
+
 function openThemePicker(){
   openModal('modal-theme-picker');
   // Highlight current theme
@@ -1105,7 +1137,17 @@ function getCurKey(){return localStorage.getItem('tf_cur')||sessionStorage.getIt
 function setCurKey(k){try{localStorage.setItem('tf_cur',k)}catch(e){}try{sessionStorage.setItem('tf_cur',k)}catch(e){}}
 
 function showLogin(){document.getElementById('login-form').classList.remove('hidden');document.getElementById('reg-form').classList.add('hidden');}
-function showReg(){document.getElementById('login-form').classList.add('hidden');document.getElementById('reg-form').classList.remove('hidden');}
+function showReg(){
+  document.getElementById('login-form').classList.add('hidden');
+  document.getElementById('reg-form').classList.remove('hidden');
+  if(TEST_MODE){
+    const f=document.getElementById('ri-first');if(f&&!f.value)f.value='Michael';
+    const l=document.getElementById('ri-last');if(l&&!l.value)l.value='M';
+    const e=document.getElementById('ri-email');if(e&&!e.value)e.value=`test${Date.now()}@paced.app`;
+    const p=document.getElementById('ri-pass');if(p&&!p.value)p.value='test123';
+    const p2=document.getElementById('ri-pass2');if(p2&&!p2.value)p2.value='test123';
+  }
+}
 
 function doLogin(){
   const email=document.getElementById('li-email').value.trim().toLowerCase();
@@ -1134,6 +1176,8 @@ function doLogin(){
     });
 }
 
+let _registering=false; // flag to block onAuthStateChanged during registration
+
 function doReg(){
   const first=document.getElementById('ri-first').value.trim();
   const last=document.getElementById('ri-last').value.trim();
@@ -1148,6 +1192,7 @@ function doReg(){
   const btn=document.querySelector('#reg-form .btn-dark');
   if(btn){btn.textContent='Creating...';btn.disabled=true;}
   if(!fbAuth){showE(err,'App not connected. Try again.');if(btn){btn.textContent='Create Account';btn.disabled=false;}return;}
+  _registering=true; // block onAuthStateChanged from interfering
   fbAuth.createUserWithEmailAndPassword(email,pass)
     .then(()=>{
       err.style.display='none';
@@ -1156,8 +1201,10 @@ function doReg(){
       document.getElementById('screen-login').classList.remove('active');
       document.getElementById('screen-onboard').classList.add('active');
       document.getElementById('o-start').value=new Date().toISOString().split('T')[0];
+      _registering=false;
     })
     .catch(e=>{
+      _registering=false;
       if(btn){btn.textContent='Create Account';btn.disabled=false;}
       const msg=e.code==='auth/email-already-in-use'?'An account with this email already exists.':e.message;
       showE(err,msg);
@@ -1402,7 +1449,18 @@ function selO(el,key,val){
   const p=el.closest('.opt-grid');if(p)p.querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel'));
   el.classList.add('sel');selOpts[key]=val;
 }
-function selTheme(t){selThemeV=t;['light','dark','slate','forest','midnight'].forEach(id=>{const el=document.getElementById('tc-'+id);if(el)el.classList.toggle('sel',t===id);});applyTheme(t);}
+function selTheme(t){
+  selThemeV=t;
+  ['light','dark','slate','forest','midnight'].forEach(id=>{
+    const el=document.getElementById('tc-'+id);
+    if(!el)return;
+    el.classList.toggle('sel',t===id);
+    // Force visible selection since inline styles override CSS class border
+    el.style.outline=t===id?'3px solid #fff':'none';
+    el.style.outlineOffset='-3px';
+  });
+  applyTheme(t);
+}
 // ── PHOTO CROP SYSTEM ──
 let _cropState={scale:1,x:0,y:0,imgW:0,imgH:0,isDragging:false,lastX:0,lastY:0,lastDist:0};
 
@@ -1542,7 +1600,40 @@ function togglePw(inputId,btn){
 function showFE(id,show){const e=document.getElementById(id);if(e){e.style.display=show?'block':'none';e.className=show?'ferr show':'ferr';}}
 function markFI(id,err){const e=document.getElementById(id);if(e)e.classList.toggle('err',err);}
 
+let TEST_MODE=false;
+
+
+function toggleTestMode(){
+  TEST_MODE=!TEST_MODE;
+  const btn=document.getElementById('test-mode-btn');
+  if(btn){
+    btn.textContent=TEST_MODE?'TEST MODE: ON':'TEST MODE: OFF';
+    btn.style.background=TEST_MODE?'#2c1810':'rgba(0,0,0,.06)';
+    btn.style.color=TEST_MODE?'#fff':'var(--text3)';
+    btn.style.borderColor=TEST_MODE?'#2c1810':'rgba(0,0,0,.1)';
+  }
+}
+
+function applyTestDefaults(step){
+  if(step===1){
+    const age=document.getElementById('o-age');if(age&&!age.value)age.value='26';
+    const w=document.getElementById('o-weight');if(w&&!w.value)w.value='185';
+    const h=document.getElementById('o-height');if(h&&!h.value)h.value='71';
+    const g=document.getElementById('o-gender');if(g&&!g.value)g.value='Male';
+  }
+  if(step===2){
+    if(!selOpts.goal){selOpts.goal='Build Muscle';document.querySelector('#goal-opts .opt-card')?.classList.add('sel');}
+    const lvl=document.getElementById('o-level');if(lvl&&!lvl.value)lvl.value='Intermediate';
+  }
+  if(step===3){if(!selOpts.repRange){selOpts.repRange='8-12';document.querySelectorAll('#rep-opts .opt-card')[2]?.classList.add('sel');}}
+  if(step===4){
+    if(!selOpts.program){selOpts.program='PHUL';document.querySelectorAll('#prog-opts .opt-card')[4]?.classList.add('sel');}
+    const sd=document.getElementById('o-start');if(sd&&!sd.value)sd.value=new Date().toISOString().split('T')[0];
+  }
+}
+
 function valS1(){
+  if(TEST_MODE){applyTestDefaults(1);goStep(2);return;}
   let ok=true;
   const age=document.getElementById('o-age').value;
   const w=document.getElementById('o-weight').value;
@@ -1553,13 +1644,18 @@ function valS1(){
   if(ok)goStep(2);
 }
 function valS2(){
+  if(TEST_MODE){applyTestDefaults(2);goStep(3);return;}
   let ok=true;
   if(!selOpts.goal){showFE('e-goal',true);ok=false;}else showFE('e-goal',false);
   if(!document.getElementById('o-level').value){markFI('o-level',true);showFE('e-level',true);ok=false;}else{markFI('o-level',false);showFE('e-level',false);}
   if(ok)goStep(3);
 }
-function valS3(){if(!selOpts.repRange){showFE('e-rep',true);return;}showFE('e-rep',false);goStep(4);}
+function valS3(){
+  if(TEST_MODE){applyTestDefaults(3);goStep(4);return;}
+  if(!selOpts.repRange){showFE('e-rep',true);return;}showFE('e-rep',false);goStep(4);
+}
 function valS4(){
+  if(TEST_MODE){applyTestDefaults(4);if(selOpts.program==='Custom'){openCustomSplit();}else{goStep(5);}return;}
   let ok=true;
   if(!selOpts.program){showFE('e-prog',true);ok=false;}else showFE('e-prog',false);
   if(!document.getElementById('o-start').value){markFI('o-start',true);showFE('e-start',true);ok=false;}else{markFI('o-start',false);showFE('e-start',false);}
@@ -1624,10 +1720,29 @@ function finishOB(){
     weeklyCheckDates:{},
     avatar:obAvData,
   };
-  for(let d=0;d<7;d++){
-    const sel=document.getElementById(`da-${d}`);
-    if(sel)D.schedule[d]=sel.value;
-    D.equipment[d]=obEquip[d]||'Commercial Gym';
+  // Ensure schedule is populated — renderDayAssign may not have run
+  if(!document.getElementById('da-0')){
+    // Day assign wasn't rendered — apply default schedule for the program
+    const pid=selOpts.program||'PPL';
+    const prog=pid==='Custom'&&D.customSplit?D.customSplit:PROGS[pid];
+    if(prog){
+      const restDays=prog.restDays||[];
+      for(let d=0;d<7;d++){
+        if(restDays.includes(d)){D.schedule[d]='rest';}
+        else{
+          const workDays=[0,1,2,3,4,5,6].filter(x=>!restDays.includes(x));
+          const pos=workDays.indexOf(d);
+          D.schedule[d]=pos>=0?`${pid}-${pos%prog.days.length}`:'rest';
+        }
+        D.equipment[d]=obEquip[d]||'Commercial Gym';
+      }
+    }
+  } else {
+    for(let d=0;d<7;d++){
+      const sel=document.getElementById(`da-${d}`);
+      if(sel)D.schedule[d]=sel.value;
+      D.equipment[d]=obEquip[d]||'Commercial Gym';
+    }
   }
   applyTheme(selThemeV);saveData();cloudSave();bootApp();
 }
@@ -1681,6 +1796,32 @@ function saveCustomSplit(){
 // ═══════════════════════════════════════════════
 // APP BOOT
 // ═══════════════════════════════════════════════
+// ── DEV MODE — instant test data (remove before production) ──
+// Open URL with ?dev=1 to skip login and load sample data
+function loadDevMode(){
+  const today=new Date();
+  const start=new Date(today);start.setDate(today.getDate()-14);
+  const end=new Date(start);end.setDate(start.getDate()+56);
+  D={
+    user:{firstName:'Michael',lastName:'M',email:'test@paced.app',age:'28',gender:'Male',
+      weight:'185',height:'71',goal:'Build Muscle',level:'Intermediate',repRange:'8-12',
+      program:'PHUL',theme:'light',unit:'lbs',
+      programStart:start.toISOString().split('T')[0],
+      programEnd:end.toISOString().split('T')[0]},
+    log:[
+      {id:'1',date:new Date(today.getTime()-86400000*1).toISOString(),workoutName:'Upper Power',focus:'Chest · Back',equipType:'Commercial Gym',duration:3120,setsCompleted:18,volume:12400,calories:380,notes:'',exercises:[{name:'Barbell Bench Press',muscle:'Chest',equip:'Barbell',eqC:'eq-barbell',sets:[{weight:185,reps:8,done:true},{weight:185,reps:7,done:true},{weight:185,reps:7,done:true},{weight:185,reps:6,done:true}]},{name:'Barbell Row',muscle:'Mid Back',equip:'Barbell',eqC:'eq-barbell',sets:[{weight:175,reps:8,done:true},{weight:175,reps:8,done:true}]}]},
+      {id:'2',date:new Date(today.getTime()-86400000*3).toISOString(),workoutName:'Lower Power',focus:'Legs',equipType:'Commercial Gym',duration:3600,setsCompleted:20,volume:18200,calories:420,notes:'',exercises:[{name:'Barbell Back Squat',muscle:'Quads',equip:'Barbell',eqC:'eq-barbell',sets:[{weight:225,reps:5,done:true},{weight:225,reps:5,done:true},{weight:225,reps:4,done:true}]},{name:'Romanian Deadlift',muscle:'Hamstrings',equip:'Barbell',eqC:'eq-barbell',sets:[{weight:185,reps:8,done:true},{weight:185,reps:8,done:true}]}]},
+      {id:'3',date:new Date(today.getTime()-86400000*5).toISOString(),workoutName:'Upper Hypertrophy',focus:'Chest · Shoulders',equipType:'Commercial Gym',duration:2880,setsCompleted:22,volume:9800,calories:340,notes:'',exercises:[{name:'Incline Dumbbell Press',muscle:'Upper Chest',equip:'Dumbbell',eqC:'eq-dumbbell',sets:[{weight:70,reps:12,done:true},{weight:70,reps:11,done:true},{weight:70,reps:10,done:true}]}]},
+    ],
+    prs:{'Barbell Bench Press':{weight:195,reps:6,date:new Date(today.getTime()-86400000*7).toISOString()},'Barbell Back Squat':{weight:235,reps:5,date:new Date(today.getTime()-86400000*10).toISOString()},'Barbell Row':{weight:185,reps:8,date:new Date(today.getTime()-86400000*3).toISOString()},'Romanian Deadlift':{weight:195,reps:8,date:new Date(today.getTime()-86400000*5).toISOString()},'Overhead Press':{weight:135,reps:6,date:new Date(today.getTime()-86400000*8).toISOString()}},
+    schedule:{0:'rest',1:'PHUL-0',2:'PHUL-1',3:'rest',4:'PHUL-2',5:'PHUL-3',6:'rest'},
+    equipment:{0:'Commercial Gym',1:'Commercial Gym',2:'Commercial Gym',3:'Commercial Gym',4:'Commercial Gym',5:'Commercial Gym',6:'Commercial Gym'},
+    weeklyCheckins:[{week:1,date:new Date(today.getTime()-86400000*7).toISOString(),weight:186,ratings:{energy:4,soreness:3,progress:4,motivation:5}},{week:2,date:today.toISOString(),weight:185,ratings:{energy:5,soreness:2,progress:4,motivation:5}}],
+    programHistory:[],customSplit:null,skippedDays:[]
+  };
+  bootApp();
+}
+
 function bootApp(){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-app').classList.add('active');
@@ -4049,6 +4190,8 @@ window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',e=>{i
 // ═══════════════════════════════════════════════
 // Boot — Firebase if available, localStorage fallback if offline
 function localBoot(){
+  // Dev mode shortcut — open with ?dev=1 to skip login
+  if(location.search.includes('dev=1')){loadDevMode();return;}
   const key=getCurKey();
   if(key){loadUD();}
   if(D.user&&D.user.firstName){
@@ -4061,8 +4204,12 @@ function localBoot(){
 }
 
 if(fbAuth){
+  // Dev mode — skip Firebase entirely
+  if(location.search.includes('dev=1')){loadDevMode();}
+  else{
   fbAuth.onAuthStateChanged(async(user)=>{
-    // Don't interfere if onboarding is already in progress
+    // Don't interfere if registration or onboarding is in progress
+    if(_registering)return;
     const onboardingActive=document.getElementById('screen-onboard')?.classList.contains('active');
     if(onboardingActive)return;
 
@@ -4074,11 +4221,14 @@ if(fbAuth){
         loadUD();
       }
       if(D.user&&D.user.firstName){
+        // Fully onboarded — go straight to app
         document.getElementById('screen-login').classList.remove('active');
         bootApp();
       } else {
-        document.getElementById('screen-login').classList.remove('active');
-        document.getElementById('screen-onboard').classList.add('active');
+        // No onboarding data — sign them out and send to login
+        // (they need to register properly, not silently land in onboarding)
+        fbAuth.signOut().catch(()=>{});
+        document.getElementById('screen-login').classList.add('active');
         document.getElementById('o-start').value=new Date().toISOString().split('T')[0];
       }
     } else {
@@ -4086,6 +4236,7 @@ if(fbAuth){
       document.getElementById('o-start').value=new Date().toISOString().split('T')[0];
     }
   });
+  } // end non-dev mode
 } else {
   // Firebase unavailable — use localStorage only
   localBoot();
@@ -4094,7 +4245,7 @@ if(fbAuth){
 // ═══════════════════════════════════════════════
 // AI COACH — baked-in key, proactive + reactive
 // ═══════════════════════════════════════════════
-const OPENAI_KEY='sk-proj-3JIBSs8GERfTOBsu8BHKnyhJ6RPgfHLx9WUNRXLbItW5oTq_TwVwa-M3PQrMt8yeWKBSmh9cZrT3BlbkF'; // paste your OpenAI API key here
+const OPENAI_KEY='YOUR_KEY_HERE'; // paste your OpenAI API key here
 let aiMessages=[];
 let coachNotification=null;
 
@@ -4121,7 +4272,7 @@ STALLED (4+ sessions no progress): ${stalls.join(', ')}`:''}`;
 
 async function callAI(messages,maxTokens=150){
   const key=OPENAI_KEY;
-  if(!key||key==='sk-proj-3JIBSs8GERfTOBsu8BHKnyhJ6RPgfHLx9WUNRXLbItW5oTq_TwVwa-M3PQrMt8yeWKBSmh9cZrT3BlbkF')return null;
+  if(!key||key==='YOUR_KEY_HERE')return null;
   try{
     const res=await fetch('https://api.openai.com/v1/chat/completions',{
       method:'POST',
